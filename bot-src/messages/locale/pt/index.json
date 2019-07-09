@@ -1,0 +1,6 @@
+{
+    "test_msg" : "testando...",
+    "request_error_msg" : "Ooops, não foi possível realizar sua requisição. Retorne mais tarde. ",
+    "searching_protocol_msg" : "Consultando protocolo ",
+    "how_can_i_help_you_msg" : "Em que posso ajudar?"
+}

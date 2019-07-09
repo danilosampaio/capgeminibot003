@@ -1,0 +1,19 @@
+{
+  "name": "emptybot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "dependencies": {
+    "botbuilder": "^3.13.1",
+    "botbuilder-azure": "^3.0.4",
+    "nodemon": "^1.19.1"
+  },
+  "devDependencies": {
+    "restify": "^5.0.0"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}

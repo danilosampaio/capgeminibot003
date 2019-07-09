@@ -1,0 +1,6 @@
+{
+    "test_msg" : "testing...",
+    "request_error_msg" : "Ooops, it was not possible to complete your request. Try again later. ",
+    "searching_protocol_msg" : "Searching ticket ",
+    "how_can_i_help_you_msg" : "How can I help you? "
+}
