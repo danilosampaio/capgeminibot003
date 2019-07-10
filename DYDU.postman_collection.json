@@ -1,0 +1,256 @@
+{
+	"variables": [],
+	"info": {
+		"name": "DYDU",
+		"_postman_id": "7b4b0350-c316-42e6-4ca7-bfa8af6e084d",
+		"description": "",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "VA Chat - SNOW",
+			"request": {
+				"url": "",
+				"method": "GET",
+				"header": [],
+				"body": {},
+				"description": null
+			},
+			"response": []
+		},
+		{
+			"name": "DYDU_talk",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"var jsonData = JSON.parse(responseBody);\r",
+							"postman.setEnvironmentVariable(\"text\", jsonData.text);\r",
+							"postman.setEnvironmentVariable(\"context\", jsonData.context);\r",
+							"//postman.setEnvironmentVariable(\"context_string\", jsonData.context);\r",
+							"pm.globals.set(\"context_string\", atob(jsonData.context));\r",
+							"\r",
+							"console.log(atob(pm.environment.get(\"text\")));\r",
+							"console.log(pm.globals.get(\"context_string\"));\r",
+							"\r",
+							""
+						]
+					}
+				}
+			],
+			"request": {
+				"url": {
+					"raw": "https://sma-g2-adm.prosodie.com/servlet/talk?context={{context_string}}&botId=cb81e7a0-8782-485f-ad09-786dab4d9b6b&userInput=REQ000011631623&space=VALE&language=pt&userId=user_teste&userUrl=postman&format=json",
+					"protocol": "https",
+					"host": [
+						"sma-g2-adm",
+						"prosodie",
+						"com"
+					],
+					"path": [
+						"servlet",
+						"talk"
+					],
+					"query": [
+						{
+							"key": "context",
+							"value": "{{context_string}}",
+							"equals": false,
+							"description": ""
+						},
+						{
+							"key": "botId",
+							"value": "cb81e7a0-8782-485f-ad09-786dab4d9b6b",
+							"equals": true,
+							"description": ""
+						},
+						{
+							"key": "userInput",
+							"value": "REQ000011631623",
+							"equals": true,
+							"description": ""
+						},
+						{
+							"key": "space",
+							"value": "VALE",
+							"equals": true,
+							"description": ""
+						},
+						{
+							"key": "language",
+							"value": "pt",
+							"equals": true,
+							"description": ""
+						},
+						{
+							"key": "userId",
+							"value": "user_teste",
+							"equals": true,
+							"description": ""
+						},
+						{
+							"key": "userUrl",
+							"value": "postman",
+							"equals": true,
+							"description": ""
+						},
+						{
+							"key": "format",
+							"value": "json",
+							"equals": true,
+							"description": ""
+						}
+					],
+					"variable": []
+				},
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{  \r\n   \"type\":\"poll\",\r\n   \"parameters\":{  \r\n       \"lastPoll\":{{lastPoll}},\r\n      \"mode\":\"Polling\",\r\n      \"contextId\":\"442cc658-e513-45e8-b65e-f11b95b8d52d\",\r\n      \"botId\":\"b12d17c8-8950-42da-8abb-25bcd4511d00\",\r\n      \"qualificationMode\":false,\r\n      \"language\":\"pt\",\r\n      \"space\":\"Defaut\",\r\n      \"solutionUsed\":\"LIVECHAT\",\r\n      \"timestamp\":{{timestamp}}\r\n   }\r\n}"
+				},
+				"description": "asd"
+			},
+			"response": []
+		},
+		{
+			"name": "getLivechatResponse",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"//console.log(\"Post-request: \");",
+							"var data = JSON.parse(responseBody);",
+							"",
+							"if (data === null)",
+							"{",
+							"pm.globals.set(\"lastPoll\", data.values.serverTime);",
+							"var timeStamp = Math.floor(Date.now());",
+							"pm.globals.set(\"timestamp\", timeStamp);",
+							"",
+							"//console.log(\"Text: \" + data.values.text);",
+							"}",
+							"else",
+							"{",
+							"pm.globals.set(\"timestamp\", Math.floor(Date.now()) -1000);",
+							"}",
+							"",
+							"if (data === null)",
+							"{",
+							"console.log(\"Null text\"); ",
+							"}",
+							"else",
+							"{",
+							"//console.log(b64DecodeUnicode(data.values.text));",
+							"}",
+							"function b64DecodeUnicode(str) {",
+							"    return decodeURIComponent(atob(str).split('').map(function(c) {",
+							"        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);",
+							"    }).join(''));",
+							"}"
+						]
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.globals.set(\"lastPoll\", pm.variables.get(\"timestamp\"));",
+							"pm.globals.set(\"timestamp\", Math.floor(Date.now()));"
+						]
+					}
+				}
+			],
+			"request": {
+				"url": "https://sma-g2-adm.prosodie.com/servlet/chatHttp",
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"description": ""
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{  \r\n   \"type\":\"poll\",\r\n   \"parameters\":{  \r\n       \"lastPoll\":{{lastPoll}},\r\n      \"mode\":\"Polling\",\r\n      \"contextId\":\"898f31e3-273e-470c-83eb-f84913e06196\",\r\n      \"botId\":\"cb81e7a0-8782-485f-ad09-786dab4d9b6b\",\r\n      \"qualificationMode\":false,\r\n      \"language\":\"pt\",\r\n      \"space\":\"VALE\",\r\n      \"solutionUsed\":\"LIVECHAT\",\r\n      \"timestamp\":{{timestamp}}\r\n   }\r\n}"
+				},
+				"description": "Get a livechat response from specific context"
+			},
+			"response": []
+		},
+		{
+			"name": "getLivechatResponse",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"//console.log(\"Post-request: \");",
+							"var data = JSON.parse(responseBody);",
+							"",
+							"if (data === null)",
+							"{",
+							"pm.globals.set(\"lastPoll\", data.values.serverTime -10000);",
+							"//var timeStamp = Math.floor(Date.now());",
+							"//pm.globals.set(\"timestamp\", timeStamp);",
+							"",
+							"console.log(\"Text: \" + data.values.text);",
+							"}",
+							"else",
+							"{",
+							"pm.globals.set(\"timestamp\", Math.floor(Date.now()) -10000);",
+							"}",
+							"",
+							"if (data === null)",
+							"{",
+							"console.log(\"Null text\"); ",
+							"}",
+							"else",
+							"{",
+							"console.log(b64DecodeUnicode(data.values.text));",
+							"}",
+							"function b64DecodeUnicode(str) {",
+							"    return decodeURIComponent(atob(str).split('').map(function(c) {",
+							"        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);",
+							"    }).join(''));",
+							"}"
+						]
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.globals.set(\"lastPoll\", pm.variables.get(\"timestamp\"));",
+							"pm.globals.set(\"timestamp\", Math.floor(Date.now()));"
+						]
+					}
+				}
+			],
+			"request": {
+				"url": "https://sma-g2-adm.prosodie.com/servlet/chatHttp",
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{  \r\n   \"type\":\"poll\",\r\n   \"parameters\":{  \r\n       \"lastPoll\":{{lastPoll}},\r\n      \"mode\":\"Polling\",\r\n      \"contextId\":\"a533614b-ad93-43cc-9e4f-4fcc561cd49a\",\r\n      \"botId\":\"b12d17c8-8950-42da-8abb-25bcd4511d00\",\r\n      \"qualificationMode\":false,\r\n      \"language\":\"pt\",\r\n      \"space\":\"Defaut\",\r\n      \"solutionUsed\":\"LIVECHAT\",\r\n      \"timestamp\":{{timestamp}}\r\n   }\r\n}"
+				},
+				"description": "Get a livechat response from specific context"
+			},
+			"response": []
+		}
+	]
+}
