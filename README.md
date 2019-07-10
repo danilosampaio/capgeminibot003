@@ -16,3 +16,6 @@ module.exports.botIds = {
 }
 
 2 - File: Util.js, line 25, added "user_language: language," below. Reason: Ability to export the language as 2 char variable
+
+3 - File: Util.js, line 67, changed requestData.uri to 'https://sma-g7-adm.prosodie.com/servlet/talk'. Reason: addition to item 1.
+
