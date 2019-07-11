@@ -37,19 +37,19 @@ module.exports.prepareRequest = (type, childbot, msg, language, userId, userName
 		requestData.qs.solutionUsed = "LIVECHAT";
 	} else if (type == "Livechat") {
 		requestData = {
-			method: "POST",
+			method: "GET",
 			//uri: "https://sma-g2-adm.prosodie.com/servlet/chatHttp",
 			uri: "https://sma-g7-adm.prosodie.com/servlet/chatHttp",
 			headers: {
-				"content-type": "application/json"
+				"content-type": "application/json",
 			},
 			json: {
 				"type": "poll",
-				"parameters": {  
+				"parameters": {
 					"contextId": contexto,
 					"mode": "Polling",
 					"solutionUsed": "LIVECHAT",
-					"timestamp": new Date().getTime(),
+					"timestamp": new Date().getTime() - 1000,
 					"lastPoll": lastPoll,
 					"botId": childbot,
 					"space": "VALE",
@@ -73,10 +73,10 @@ module.exports.prepareRequest = (type, childbot, msg, language, userId, userName
 }
 
 module.exports.botIds = {
-	"uri1" : "a921bb0e-0774-422c-abc9-8696f0d9cdfe",
+	"uri1" : "3037ae57-a753-4c4a-aeac-d541aae89e31",
   	//"uri1" : "cb81e7a0-8782-485f-ad09-786dab4d9b6b",
 	//"uri2" : "9c4a5690-f07e-4318-96b1-652a974e5fda"
-	"uri2" : "a921bb0e-0774-422c-abc9-8696f0d9cdfe"
+	"uri2" : "3037ae57-a753-4c4a-aeac-d541aae89e31"
 }
 
 module.exports.statusToReplace = { 

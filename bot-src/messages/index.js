@@ -13,8 +13,10 @@ var useEmulator = true;
 var language = "pt" // idioma default
 var userId = "Capgemini";
 var userName = "Capgemini";
+var newMessageFromLiveChat = false;
+var DMLiveChatConnectionSucceed = false;
 
-const listenerTimeout = 2000;
+const listenerTimeout = 5000;
 
 var connector = useEmulator ? new builder.ChatConnector() : new botbuilder_azure.BotServiceConnector({
 	appId: process.env['MicrosoftAppId'],
@@ -235,6 +237,7 @@ function getVADataMessage(session, message, next, botId) {
 
 
 function getVAContext(session, message, next, botId) {
+	console.log('getVAContext')
 
 	if (message.trim() !== "") {
 
@@ -261,7 +264,20 @@ function getVAContext(session, message, next, botId) {
 					session.conversationData.previousAuth = session.conversationData.auth;
 				}
 
-				var msgdecodificada = Buffer.from(fields["text"], 'base64').toString();
+				var msgdecodificada = null
+
+				  try
+                    {
+                        msgdecodificada = Buffer.from(fields["text"], 'base64').toString();
+
+                    } catch (err)
+                    {
+                        console.log(err);
+                        while (fields["typeResponse"].toString() == "NAWaitingForOperator") 
+                        {           
+                     }
+                        msgdecodificada = fields["typeResponse"].toString();
+                    } 
 
 				session.conversationData.va_message = capHtmlToList(session, msgdecodificada);
 				session.conversationData.lastPoll = new Date().getTime();
@@ -474,8 +490,7 @@ bot.dialog('fetchPoll', [
 		let listener = new Listener(listenerTimeout);
 
 		listener.onFech(() => {
-
-			let userInput = session.message.text;
+			let userInput = session.message.text;
 
 			if (results.response && results.response.entity) {
 				userInput = results.response.entity
@@ -483,11 +498,21 @@ bot.dialog('fetchPoll', [
 
 			console.log('Value: ' + userInput);
 
-			var requestData = Util.prepareRequest("Assistant", Util.botIds.uri1, userInput, language,  userId, userName, session.conversationData.auth, session.conversationData.lastPoll);
+			/*var requestData = Util.prepareRequest("Assistant", Util.botIds.uri1, userInput, language,  userId, userName, session.conversationData.auth, session.conversationData.lastPoll);
 			console.log('request:');
 			console.log(requestData);
-			session.conversationData.lastPoll = new Date().getTime();
-			request.get(requestData, function (err, res, body) {
+			session.conversationData.lastPoll = new Date().getTime();*/
+			getPoll(Util.botIds.uri1, userInput, language, userId, userName, session.conversationData.auth, session.conversationData.lastPoll, session);
+			
+			/*request.get(requestData, function (err, res, body) {
+				console.log('response body');
+				console.log(body);
+				try {
+					JSON.parse(body);
+				} catch (e) {
+					getPoll()
+				}
+				/*
 
 				if (err) {
 					session.send('request_error_msg');
@@ -498,7 +523,19 @@ bot.dialog('fetchPoll', [
 				} else {
 					console.log('RESPOSTA: ' + body);
 					var fields = JSON.parse(body);
-					var msgdecodificada = Buffer.from(fields["text"], 'base64').toString();
+					 var msgdecodificada = "";
+                    
+                    try{
+                        msgdecodificada = Buffer.from(fields["text"], 'base64').toString();
+
+                    } catch (err){
+                        console.log(err);
+
+                        //while (fields["typeResponse"].toString() != "NAWaitingForOperator") {
+                            
+                            //fields["typeResponse"].toString();
+                        //}
+                    } 
 
 					if (fields["sidebar"]) {
 						let sidebarFields = fields["sidebar"];
@@ -513,14 +550,72 @@ bot.dialog('fetchPoll', [
 					session.replaceDialog('fetchPoll');
 				}
 
-			});
+				* /
+
+			});*/
 		});
 
-		listener.fetch();
+		//if (newMessageFromLiveChat){
+			listener.fetch();
+			newMessageFromLiveChat = false;
+		//}
 		// session.replaceDialog('fetchPoll');
 	}
 
 ]);
+
+function getPoll(uri1, userInput, language,  userId, userName, auth, lastPoll, session) {
+	console.log('>>>>>> getPoll')
+	console.log('>>>>>> DMLiveChatConnectionSucceed: ' + DMLiveChatConnectionSucceed);
+	var type = DMLiveChatConnectionSucceed ? 'Livechat' : 'Assistant';
+	var requestData = Util.prepareRequest(type, uri1, userInput, language,  userId, userName, auth, lastPoll);
+	session.conversationData.lastPoll = new Date().getTime();
+	console.log('>>>>>> requestData: ' + requestData);
+
+	request.get(requestData, callbackPoll(requestData, uri1, userInput, language,  userId, userName, auth, lastPoll, session));
+}
+
+function callbackPoll (requestData, uri1, userInput, language,  userId, userName, auth, lastPoll, session) {
+	return function(err, res, body) {
+		try {
+			const mensagem = typeof body == 'object' ? body : JSON.parse(body.replace(/(\s*?{\s*?|\s*?,\s*?)(['"])?([a-zA-Z0-9]+)(['"])?:/g, '$1"$3":'));
+			let lastPollAux = lastPoll;
+			
+			//if (body.values.text){
+			//	newMessageFromLiveChat = true;
+			//}
+			//requestData.json.parameters.lastPoll = mensagem.values ? mensagem.values.serverTime : requestData.json.parameters.lastPoll;
+			//requestData.json.parameters.timestamp = new Date().getTime() - 1000
+			
+			if (mensagem.values) {
+				lastPollAux = mensagem.values.serverTime;
+			} else if (requestData.json) {
+				lastPollAux = requestData.json.parameters.lastPoll;
+			}
+
+			if (mensagem.typeResponse == "NAWaitingForOperator" || mensagem.typeResponse == "DMLiveChatConnectionSucceed") {
+				DMLiveChatConnectionSucceed = true;
+			}
+
+			console.log('>>>>>>> callbackPoll try')
+			console.log('>>>>>>> mensagem: ' + JSON.stringify(mensagem))
+			console.log('>>>>>>> lastPollAux: ' + lastPollAux)
+
+			setTimeout(() => getPoll(uri1, userInput, language,  userId, userName, auth, lastPollAux, session), 1000);
+		} catch (e) {			
+			console.log('>>>>>>> callbackPoll catch')
+			console.log('>>>>>>> body: ' + JSON.stringify(body))
+
+			if ((typeof body == 'string' && body.indexOf('DMLiveChatConnectionSucceed') != -1) ||
+				(typeof body == 'object' && body.typeResponse =='DMLiveChatConnectionSucceed') ||
+				(typeof body == 'string' && body.indexOf('NAWaitingForOperator') != -1) ||
+				(typeof body == 'object' && body.typeResponse =='NAWaitingForOperator')){
+					DMLiveChatConnectionSucceed = true;
+			}			
+			setTimeout(() => getPoll(uri1, userInput, language,  userId, userName, auth, lastPoll, session), 1000);
+		}
+	}
+}
 
 bot.dialog('/', [
 	(session, results) => {
