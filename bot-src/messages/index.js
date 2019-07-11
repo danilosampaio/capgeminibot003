@@ -567,7 +567,9 @@ bot.dialog('fetchPoll', [
 function getPoll(uri1, userInput, language,  userId, userName, auth, lastPoll, session) {
 	console.log('>>>>>> getPoll')
 	console.log('>>>>>> DMLiveChatConnectionSucceed: ' + DMLiveChatConnectionSucceed);
+	//var type = userInput ? (DMLiveChatConnectionSucceed ? 'Livechat' : 'Assistant') : 'Talk';
 	var type = DMLiveChatConnectionSucceed ? 'Livechat' : 'Assistant';
+	console.log('>>>>>> RequestType: ' + type);
 	var requestData = Util.prepareRequest(type, uri1, userInput, language,  userId, userName, auth, lastPoll);
 	session.conversationData.lastPoll = new Date().getTime();
 	console.log('>>>>>> requestData: ' + requestData);
@@ -577,6 +579,7 @@ function getPoll(uri1, userInput, language,  userId, userName, auth, lastPoll, s
 
 function callbackPoll (requestData, uri1, userInput, language,  userId, userName, auth, lastPoll, session) {
 	return function(err, res, body) {
+		let userInputAux = userInput;
 		try {
 			const mensagem = typeof body == 'object' ? body : JSON.parse(body.replace(/(\s*?{\s*?|\s*?,\s*?)(['"])?([a-zA-Z0-9]+)(['"])?:/g, '$1"$3":'));
 			let lastPollAux = lastPoll;
@@ -592,16 +595,23 @@ function callbackPoll (requestData, uri1, userInput, language,  userId, userName
 			} else if (requestData.json) {
 				lastPollAux = requestData.json.parameters.lastPoll;
 			}
-
+			
 			if (mensagem.typeResponse == "NAWaitingForOperator" || mensagem.typeResponse == "DMLiveChatConnectionSucceed") {
 				DMLiveChatConnectionSucceed = true;
+				//userInputAux = '';
 			}
 
 			console.log('>>>>>>> callbackPoll try')
 			console.log('>>>>>>> mensagem: ' + JSON.stringify(mensagem))
 			console.log('>>>>>>> lastPollAux: ' + lastPollAux)
 
-			setTimeout(() => getPoll(uri1, userInput, language,  userId, userName, auth, lastPollAux, session), 1000);
+			try {
+				session.conversationData.va_message = capHtmlToList(session, Buffer.from(mensagem.values, 'base64').toString());
+			} catch (e) {
+				console.log(e);
+			}
+
+			setTimeout(() => getPoll(uri1, userInputAux, language,  userId, userName, auth, lastPollAux, session), 1000);
 		} catch (e) {			
 			console.log('>>>>>>> callbackPoll catch')
 			console.log('>>>>>>> body: ' + JSON.stringify(body))
@@ -611,8 +621,9 @@ function callbackPoll (requestData, uri1, userInput, language,  userId, userName
 				(typeof body == 'string' && body.indexOf('NAWaitingForOperator') != -1) ||
 				(typeof body == 'object' && body.typeResponse =='NAWaitingForOperator')){
 					DMLiveChatConnectionSucceed = true;
+					//userInputAux = '';
 			}			
-			setTimeout(() => getPoll(uri1, userInput, language,  userId, userName, auth, lastPoll, session), 1000);
+			setTimeout(() => getPoll(uri1, userInputAux, language,  userId, userName, auth, lastPoll, session), 1000);
 		}
 	}
 }

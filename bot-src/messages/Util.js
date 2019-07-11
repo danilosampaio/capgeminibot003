@@ -47,6 +47,7 @@ module.exports.prepareRequest = (type, childbot, msg, language, userId, userName
 				"type": "poll",
 				"parameters": {
 					"contextId": contexto,
+					"userInput": msg,
 					"mode": "Polling",
 					"solutionUsed": "LIVECHAT",
 					"timestamp": new Date().getTime() - 1000,
