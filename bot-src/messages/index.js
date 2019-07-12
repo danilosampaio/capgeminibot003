@@ -585,6 +585,7 @@ function callbackPoll (requestData, uri1, userInput, language,  userId, userName
 		try {
 			const mensagem = typeof body == 'object' ? body : JSON.parse(body.replace(/(\s*?{\s*?|\s*?,\s*?)(['"])?([a-zA-Z0-9]+)(['"])?:/g, '$1"$3":'));
 			let lastPollAux = lastPoll;
+			mensagem = JSON.parse(JSON.stringify(mensagem));
 			
 			//if (body.values.text){
 			//	newMessageFromLiveChat = true;
@@ -592,7 +593,7 @@ function callbackPoll (requestData, uri1, userInput, language,  userId, userName
 			//requestData.json.parameters.lastPoll = mensagem.values ? mensagem.values.serverTime : requestData.json.parameters.lastPoll;
 			//requestData.json.parameters.timestamp = new Date().getTime() - 1000
 			
-			if (mensagem.serverTime) {
+			if (mensagem.values.serverTime) {
 				lastPollAux = mensagem.serverTime;
 			} else if (requestData.json) {
 				lastPollAux = requestData.json.parameters.lastPoll;
@@ -608,7 +609,9 @@ function callbackPoll (requestData, uri1, userInput, language,  userId, userName
 			console.log('>>>>>>> lastPollAux: ' + lastPollAux)
 
 			try {
+				console.log('>>>>>>>> text: ' + mensagem.values.text);
 				session.conversationData.va_message = capHtmlToList(session, Buffer.from(mensagem.text, 'base64').toString());
+				session.send(session.conversationData.va_message);
 			} catch (e) {
 				console.log(e);
 			}
@@ -625,12 +628,23 @@ function callbackPoll (requestData, uri1, userInput, language,  userId, userName
 
 
 
-			setTimeout(() => getPoll(uri1, userInputAux, language,  userId, userName, auth, lastPollAux, session), 1000);
+			setTimeout(() => getPoll(uri1, userInputAux, language,  userId, userName, auth, lastPollAux, session), 3000);
      		lastVAMessage = session.conversationData.va_message;
 
 		} catch (e) {			
 			console.log('>>>>>>> callbackPoll catch')
 			console.log('>>>>>>> body: ' + JSON.stringify(body))
+			body = JSON.parse(JSON.stringify(body));
+
+			if (body.values && body.values.text) {
+				try {
+					console.log('>>>>>>>>> catch text: ' + body.values.text);
+					session.conversationData.va_message = capHtmlToList(session, Buffer.from(body.values.text, 'base64').toString());
+					session.send(session.conversationData.va_message);
+				} catch (e) {
+					console.log(e);
+				}
+			}
 
 			if ((typeof body == 'string' && body.indexOf('DMLiveChatConnectionSucceed') != -1) ||
 				(typeof body == 'object' && body.typeResponse =='DMLiveChatConnectionSucceed') ||
@@ -639,7 +653,7 @@ function callbackPoll (requestData, uri1, userInput, language,  userId, userName
 					DMLiveChatConnectionSucceed = true;
 					//userInputAux = '';
 			}			
-			// setTimeout(() => getPoll(uri1, userInputAux, language,  userId, userName, auth, lastPoll, session), 1000);
+			setTimeout(() => getPoll(uri1, userInputAux, language,  userId, userName, auth, lastPoll, session), 1000);
 		}
 	}
 }
