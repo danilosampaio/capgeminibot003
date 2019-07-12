@@ -591,10 +591,10 @@ function callbackPoll (requestData, uri1, userInput, language,  userId, userName
 			//	newMessageFromLiveChat = true;
 			//}
 			//requestData.json.parameters.lastPoll = mensagem.values ? mensagem.values.serverTime : requestData.json.parameters.lastPoll;
-			//requestData.json.parameters.timestamp = new Date().getTime() - 1000
+			requestData.json.parameters.timestamp = new Date().getTime() - 1000
 			
 			if (mensagem.values.serverTime) {
-				lastPollAux = mensagem.serverTime;
+				lastPollAux = mensagem.values.serverTime;
 			} else if (requestData.json) {
 				lastPollAux = requestData.json.parameters.lastPoll;
 			}
