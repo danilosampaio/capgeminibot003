@@ -16,6 +16,8 @@ var userName = "Capgemini";
 var newMessageFromLiveChat = false;
 var DMLiveChatConnectionSucceed = false;
 
+var lastVAMessage = "";
+
 const listenerTimeout = 5000;
 
 var connector = useEmulator ? new builder.ChatConnector() : new botbuilder_azure.BotServiceConnector({
@@ -590,8 +592,8 @@ function callbackPoll (requestData, uri1, userInput, language,  userId, userName
 			//requestData.json.parameters.lastPoll = mensagem.values ? mensagem.values.serverTime : requestData.json.parameters.lastPoll;
 			//requestData.json.parameters.timestamp = new Date().getTime() - 1000
 			
-			if (mensagem.values) {
-				lastPollAux = mensagem.values.serverTime;
+			if (mensagem.serverTime) {
+				lastPollAux = mensagem.serverTime;
 			} else if (requestData.json) {
 				lastPollAux = requestData.json.parameters.lastPoll;
 			}
@@ -606,12 +608,26 @@ function callbackPoll (requestData, uri1, userInput, language,  userId, userName
 			console.log('>>>>>>> lastPollAux: ' + lastPollAux)
 
 			try {
-				session.conversationData.va_message = capHtmlToList(session, Buffer.from(mensagem.values, 'base64').toString());
+				session.conversationData.va_message = capHtmlToList(session, Buffer.from(mensagem.text, 'base64').toString());
 			} catch (e) {
 				console.log(e);
 			}
 
+			console.log('xxxxxxxxxxxxxxxxxxxx: ' + Buffer.from(mensagem.text, 'base64').toString());
+
+			if (session.conversationData.va_message == lastVAMessage){
+
+			}else{
+				session.send(session.conversationData.va_message);
+			}
+
+			
+
+
+
 			setTimeout(() => getPoll(uri1, userInputAux, language,  userId, userName, auth, lastPollAux, session), 1000);
+     		lastVAMessage = session.conversationData.va_message;
+
 		} catch (e) {			
 			console.log('>>>>>>> callbackPoll catch')
 			console.log('>>>>>>> body: ' + JSON.stringify(body))
@@ -623,7 +639,7 @@ function callbackPoll (requestData, uri1, userInput, language,  userId, userName
 					DMLiveChatConnectionSucceed = true;
 					//userInputAux = '';
 			}			
-			setTimeout(() => getPoll(uri1, userInputAux, language,  userId, userName, auth, lastPoll, session), 1000);
+			// setTimeout(() => getPoll(uri1, userInputAux, language,  userId, userName, auth, lastPoll, session), 1000);
 		}
 	}
 }
