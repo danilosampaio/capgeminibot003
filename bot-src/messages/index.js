@@ -611,22 +611,13 @@ function callbackPoll (requestData, uri1, userInput, language,  userId, userName
 			try {
 				console.log('>>>>>>>> text: ' + mensagem.values.text);
 				session.conversationData.va_message = capHtmlToList(session, Buffer.from(mensagem.text, 'base64').toString());
-				session.send(session.conversationData.va_message);
+				if (session.conversationData.va_message !== lastVAMessage){
+					session.send(session.conversationData.va_message);
+					lastVAMessage = session.conversationData.va_message
+				}
 			} catch (e) {
 				console.log(e);
 			}
-
-			console.log('xxxxxxxxxxxxxxxxxxxx: ' + Buffer.from(mensagem.text, 'base64').toString());
-
-			if (session.conversationData.va_message == lastVAMessage){
-
-			}else{
-				session.send(session.conversationData.va_message);
-			}
-
-			
-
-
 
 			setTimeout(() => getPoll(uri1, userInputAux, language,  userId, userName, auth, lastPollAux, session), 3000);
      		lastVAMessage = session.conversationData.va_message;
@@ -640,7 +631,11 @@ function callbackPoll (requestData, uri1, userInput, language,  userId, userName
 				try {
 					console.log('>>>>>>>>> catch text: ' + body.values.text);
 					session.conversationData.va_message = capHtmlToList(session, Buffer.from(body.values.text, 'base64').toString());
-					session.send(session.conversationData.va_message);
+					
+					if (session.conversationData.va_message !== lastVAMessage){
+						session.send(session.conversationData.va_message);
+						lastVAMessage = session.conversationData.va_message
+					}
 				} catch (e) {
 					console.log(e);
 				}
