@@ -469,7 +469,7 @@ bot.dialog('fetchPoll', [
 		console.log('>>>>>>>>>>>>>>>> emulador disparou a primeira função <<<<<<<<<<<<<<<')
 		console.log('>>>>>>>>> context etapa 1: ' + session.conversationData.auth);			
 		//console.log('Original entrada: ' + session.message.text);
-		if (session.conversationData.started == undefined || session.conversationData.started == false) {
+		if (!session.conversationData.started) {
 			if (!session.conversationData.auth){
 				getVAContext(session, session.message.text, next, Util.botIds.uri1);
 			}
@@ -577,7 +577,7 @@ function getPoll(uri1, userInput, language,  userId, userName, auth, lastPoll, s
 	console.log('>>>>>> DMLiveChatConnectionSucceed: ' + DMLiveChatConnectionSucceed);
 	console.log('>>>>>>>>> internalPoll: ' + internalPoll);
 	//var type = userInput ? (DMLiveChatConnectionSucceed ? 'Livechat' : 'Assistant') : 'Talk';
-	var type = DMLiveChatConnectionSucceed ? (userInput ? null : 'Livechat') : 'Assistant';
+	var type = DMLiveChatConnectionSucceed ? (internalPoll ? 'Livechat' : null) : 'Assistant';
 	console.log({RequestType: type});
 	var requestData = Util.prepareRequest(type, uri1, userInput, language,  userId, userName, auth, lastPoll);
 	session.conversationData.lastPoll = new Date().getTime();
@@ -591,16 +591,20 @@ function callbackPoll (requestData, uri1, userInput, language,  userId, userName
 		let userInputAux = userInput;
 		let lastPollAux = lastPoll;
 		try {
-			const mensagem = typeof body == 'object' ? body : JSON.parse(body.replace(/(\s*?{\s*?|\s*?,\s*?)(['"])?([a-zA-Z0-9]+)(['"])?:/g, '$1"$3":'));			
+			let mensagem = typeof body == 'object' ? body : JSON.parse(body.replace(/(\s*?{\s*?|\s*?,\s*?)(['"])?([a-zA-Z0-9]+)(['"])?:/g, '$1"$3":'));			
 			mensagem = JSON.parse(JSON.stringify(mensagem));
 			
 			//if (body.values.text){
 			//	newMessageFromLiveChat = true;
 			//}
 			//requestData.json.parameters.lastPoll = mensagem.values ? mensagem.values.serverTime : requestData.json.parameters.lastPoll;
-			requestData.json.parameters.timestamp = new Date().getTime() - 1000
+			if (requestData.json){
+				requestData.json.parameters.timestamp = new Date().getTime() - 1000
+			} else {
+				requestData.timestamp = new Date().getTime() - 1000
+			}
 			
-			if (mensagem.serverTime || mensagem.values.serverTime) {
+			if (mensagem.serverTime || (mensagem.values && mensagem.values.serverTime)) {
 				lastPollAux = mensagem.serverTime || mensagem.values.serverTime;
 			} else if (requestData.json) {
 				lastPollAux = requestData.json.parameters.lastPoll;
@@ -616,12 +620,14 @@ function callbackPoll (requestData, uri1, userInput, language,  userId, userName
 			console.log({lastPollAux: lastPollAux})
 
 			try {
-				const texto = Buffer.from(mensagem.text || mensagem.values.text, 'base64').toString();
-				console.log({text: texto});
-				session.conversationData.va_message = capHtmlToList(session, texto);
-				if (session.conversationData.va_message !== lastVAMessage){
-					session.send(session.conversationData.va_message);
-					lastVAMessage = session.conversationData.va_message					
+				if (mensagem.text || (mensagem.values && mensagem.values.text)){
+					const texto = Buffer.from(mensagem.text || mensagem.values.text, 'base64').toString();
+					console.log({text: texto});
+					session.conversationData.va_message = capHtmlToList(session, texto);
+					if (session.conversationData.va_message !== lastVAMessage){
+						session.send(session.conversationData.va_message);
+						lastVAMessage = session.conversationData.va_message					
+					}
 				}
 			} catch (e) {
 				console.log(e);
@@ -633,6 +639,7 @@ function callbackPoll (requestData, uri1, userInput, language,  userId, userName
 			}
 		} catch (e) {			
 			console.log('>>>>>>> callbackPoll catch')			
+			console.log(e);
 			body = JSON.parse(JSON.stringify(body));
 			console.log({body: body})
 
