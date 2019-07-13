@@ -15,6 +15,7 @@ var userId = "Capgemini";
 var userName = "Capgemini";
 var newMessageFromLiveChat = false;
 var DMLiveChatConnectionSucceed = false;
+var DMLiveChatEnded = false;
 
 var lastVAMessage = "";
 var lastSentMessage = "";
@@ -464,7 +465,7 @@ function clearConversationData(session) {
 	session.conversationData.started = false;
 }
 
-let forceFetchpoll = false;
+let forceFetchpoll = true;
 
 bot.dialog('fetchPoll', [
 	(session, args, next) => {
@@ -481,25 +482,32 @@ bot.dialog('fetchPoll', [
 		}
 	},
 
-	(session, args, next) => {
+	(session, results) => {
 		console.log('>>>>>>>>>>>>>>>> emulador disparou a segunda função <<<<<<<<<<<<<<<')
 		console.log('>>>>>>>>> context etapa 2: ' + session.conversationData.auth);			
-		if (forceFetchpoll) {
-			getPoll(Util.botIds.uri1, session.message.text, language, userId, userName, session.conversationData.auth, session.conversationData.lastPoll, session);
-			forceFetchpoll = !forceFetchpoll;	
-		}
-
+		console.log({results});
+		
 		if (session.conversationData.isList) {
 			console.log('INPUT Choice>>>');
 			builder.Prompts.choice(session, session.conversationData.va_message.title, session.conversationData.va_message.options, { listStyle: builder.ListStyle.list, maxRetries: 0 });
 		} else {
 			console.log('INPUT Text>>>');
-			builder.Prompts.text(session, session.conversationData.va_message);
+			if (session.conversationData.va_message !== lastVAMessage){
+				//builder.Prompts.text(session, session.conversationData.va_message);
+			}
 		}
-	},
+
+		//if (forceFetchpoll) {
+			if (session.conversationData.auth){
+				getPoll(Util.botIds.uri1, session.message.text, language, userId, userName, session.conversationData.auth, session.conversationData.lastPoll, session);
+			}	
+		//}
+		//forceFetchpoll = !forceFetchpoll;	
+	}/*,
 	function (session, results) {
 		console.log('>>>>>>>>>>>>>>>> emulador disparou a terceira função <<<<<<<<<<<<<<<')
 		console.log('>>>>>>>>> context etapa 3: ' + session.conversationData.auth);	
+		forceFetchpoll = true;
 
 		session.sendTyping();
 
@@ -509,7 +517,7 @@ bot.dialog('fetchPoll', [
 			let userInput = session.message.text;
 
 			if (results.response && results.response.entity) {
-				userInput = results.response.entity
+				//userInput = results.response.entity
 			}
 
 			console.log('Value: ' + userInput);
@@ -517,7 +525,7 @@ bot.dialog('fetchPoll', [
 			/*var requestData = Util.prepareRequest("Assistant", Util.botIds.uri1, userInput, language,  userId, userName, session.conversationData.auth, session.conversationData.lastPoll);
 			console.log('request:');
 			console.log(requestData);
-			session.conversationData.lastPoll = new Date().getTime();*/
+			session.conversationData.lastPoll = new Date().getTime();* /
 			console.log('>>>>>>>>>> mensagem do emulador <<<<<<<<<<<');
 			getPoll(Util.botIds.uri1, userInput, language, userId, userName, session.conversationData.auth, session.conversationData.lastPoll, session);
 			
@@ -569,7 +577,7 @@ bot.dialog('fetchPoll', [
 
 				* /
 
-			});*/
+			});* /
 		});
 
 		//if (newMessageFromLiveChat){
@@ -577,30 +585,57 @@ bot.dialog('fetchPoll', [
 			newMessageFromLiveChat = false;
 		//}
 		// session.replaceDialog('fetchPoll');
-	}
+	}*/
 
 ]);
 
 function getPoll(uri1, userInput, language,  userId, userName, auth, lastPoll, session, internalPoll) {
-	console.log('>>>>>> DMLiveChatConnectionSucceed: ' + DMLiveChatConnectionSucceed);
-	console.log('>>>>>>>>> internalPoll: ' + internalPoll);
-	//var type = userInput ? (DMLiveChatConnectionSucceed ? 'Livechat' : 'Assistant') : 'Talk';
-	var type = DMLiveChatConnectionSucceed ? (internalPoll ? 'Livechat' : null) : 'Assistant';
-	console.log({RequestType: type});
-	var requestData = Util.prepareRequest(type, uri1, userInput, language,  userId, userName, auth, lastPoll);
-	session.conversationData.lastPoll = new Date().getTime();
-	console.log(type == 'Livechat' ? {requestData: requestData.json.parameters} : {requestData: requestData});
+	console.log({DMLiveChatEnded, internalPoll})
+	if (DMLiveChatEnded && internalPoll) {
+		return;
+	}
+	console.log({internalPoll, userInput, lastSentMessage})
+	//if ((internalPoll === undefined && userInput !== lastSentMessage) || internalPoll){
+		console.log('>>>>>> DMLiveChatConnectionSucceed: ' + DMLiveChatConnectionSucceed);
+		console.log('>>>>>>>>> internalPoll: ' + internalPoll);
+		//var type = userInput ? (DMLiveChatConnectionSucceed ? 'Livechat' : 'Assistant') : 'Talk';
+		var type = DMLiveChatConnectionSucceed ? (internalPoll ? 'Livechat' : null) : 'Assistant';
+		console.log({RequestType: type});
+		var requestData = Util.prepareRequest(type, uri1, userInput, language,  userId, userName, auth, lastPoll);
+		session.conversationData.lastPoll = new Date().getTime();
+		console.log(type == 'Livechat' ? {requestData: requestData.json.parameters} : {requestData: requestData});
 
-	request.get(requestData, callbackPoll(requestData, uri1, userInput, language,  userId, userName, auth, lastPoll, session));
+		if (DMLiveChatConnectionSucceed || (internalPoll === undefined && userInput !== lastSentMessage)){
+			request.get(requestData, callbackPoll(requestData, uri1, userInput, language,  userId, userName, auth, lastPoll, session, internalPoll));
+		}
+		//if (internalPoll === undefined){
+		//	lastSentMessage = userInput;
+		//}
+	//}
 }
 
-function callbackPoll (requestData, uri1, userInput, language,  userId, userName, auth, lastPoll, session) {
+function callbackPoll (requestData, uri1, userInput, language,  userId, userName, auth, lastPoll, session, internalPoll) {
 	return function(err, res, body) {
 		let userInputAux = userInput;
 		let lastPollAux = lastPoll;
 		try {
+			if (internalPoll === undefined){
+				lastSentMessage = userInput;
+			}
+
 			let mensagem = typeof body == 'object' ? body : JSON.parse(body.replace(/(\s*?{\s*?|\s*?,\s*?)(['"])?([a-zA-Z0-9]+)(['"])?:/g, '$1"$3":'));			
 			mensagem = JSON.parse(JSON.stringify(mensagem));
+
+			const typeResponse = mensagem.typeResponse || mensagem.type;
+			const codeResponse = mensagem.code || (mensagem.values ? mensagem.values.code : '');
+			if (typeResponse == "notification" &&
+			codeResponse == 'T25PcGVyYXRvckNsb3NlRGlhbG9n') {
+				console.log('>>>>>>>>>>> a conversa acaba de ser fechada pelo operador.')
+				DMLiveChatConnectionSucceed = false;
+				DMLiveChatEnded = true;
+				session.conversationData.started = false;
+				session.conversationData.auth = null;
+			}
 			
 			//if (body.values.text){
 			//	newMessageFromLiveChat = true;
@@ -618,8 +653,10 @@ function callbackPoll (requestData, uri1, userInput, language,  userId, userName
 				lastPollAux = requestData.json.parameters.lastPoll;
 			}
 			
-			if (mensagem.typeResponse == "NAWaitingForOperator" || mensagem.typeResponse == "DMLiveChatConnectionSucceed") {
+			if (mensagem.typeResponse == "DMLiveChatConnectionSucceed" ||
+				mensagem.typeResponse == "NAWaitingForOperator") {
 				DMLiveChatConnectionSucceed = true;
+				DMLiveChatEnded = false;
 				//userInputAux = '';
 			}
 
@@ -643,7 +680,7 @@ function callbackPoll (requestData, uri1, userInput, language,  userId, userName
 				console.log(e);
 			}
 
-			if (DMLiveChatConnectionSucceed){
+			if (DMLiveChatConnectionSucceed && !DMLiveChatEnded){
 				//mensagem do emulador, usar talk, senão usar chatHttp
 				setTimeout(() => getPoll(uri1, null, language,  userId, userName, auth, lastPollAux, session, true), 3000);
 			}
@@ -677,14 +714,12 @@ function callbackPoll (requestData, uri1, userInput, language,  userId, userName
 			}
 
 			if ((typeof body == 'string' && body.indexOf('DMLiveChatConnectionSucceed') != -1) ||
-				(typeof body == 'object' && body.typeResponse =='DMLiveChatConnectionSucceed') ||
-				(typeof body == 'string' && body.indexOf('NAWaitingForOperator') != -1) ||
-				(typeof body == 'object' && body.typeResponse =='NAWaitingForOperator')){
+				(typeof body == 'object' && body.typeResponse =='DMLiveChatConnectionSucceed')){
 					DMLiveChatConnectionSucceed = true;
 					//userInputAux = '';
 			}			
 
-			if (DMLiveChatConnectionSucceed){
+			if (DMLiveChatConnectionSucceed && !DMLiveChatEnded){
 				setTimeout(() => getPoll(uri1, null, language,  userId, userName, auth, lastPollAux, session, true), 3000);
 			}
 		}
