@@ -463,11 +463,14 @@ function clearConversationData(session) {
 	session.conversationData.started = false;
 }
 
+let fetchpollSteps = null;
 
 bot.dialog('fetchPoll', [
 	(session, args, next) => {
 		console.log('>>>>>>>>>>>>>>>> emulador disparou a primeira função <<<<<<<<<<<<<<<')
-		console.log('>>>>>>>>> context etapa 1: ' + session.conversationData.auth);			
+		console.log('>>>>>>>>> context etapa 1: ' + session.conversationData.auth);		
+		fetchpollSteps = 'pendente';
+		
 		//console.log('Original entrada: ' + session.message.text);
 		if (!session.conversationData.started) {
 			if (!session.conversationData.auth){
@@ -481,6 +484,12 @@ bot.dialog('fetchPoll', [
 	(session, args, next) => {
 		console.log('>>>>>>>>>>>>>>>> emulador disparou a segunda função <<<<<<<<<<<<<<<')
 		console.log('>>>>>>>>> context etapa 2: ' + session.conversationData.auth);			
+		if (fetchpollSteps === 'pendente') {
+			getPoll(Util.botIds.uri1, session.message.text, language, userId, userName, session.conversationData.auth, session.conversationData.lastPoll, session);
+			fetchpollSteps = 'concluido';	
+		}
+		fetchpollSteps = 'pendente';
+
 		if (session.conversationData.isList) {
 			console.log('INPUT Choice>>>');
 			builder.Prompts.choice(session, session.conversationData.va_message.title, session.conversationData.va_message.options, { listStyle: builder.ListStyle.list, maxRetries: 0 });
@@ -491,7 +500,8 @@ bot.dialog('fetchPoll', [
 	},
 	function (session, results) {
 		console.log('>>>>>>>>>>>>>>>> emulador disparou a terceira função <<<<<<<<<<<<<<<')
-		console.log('>>>>>>>>> context etapa 3: ' + session.conversationData.auth);			
+		console.log('>>>>>>>>> context etapa 3: ' + session.conversationData.auth);	
+		fetchpollSteps = 'concluido';		
 
 		session.sendTyping();
 
