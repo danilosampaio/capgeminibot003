@@ -487,7 +487,6 @@ bot.dialog('fetchPoll', [
 		} else {
 			console.log('INPUT Text>>>');
 			builder.Prompts.text(session, session.conversationData.va_message);
-			next();
 		}
 	},
 	function (session, results) {
@@ -668,7 +667,7 @@ function callbackPoll (requestData, uri1, userInput, language,  userId, userName
 			}			
 
 			if (DMLiveChatConnectionSucceed){
-				setTimeout(() => getPoll(uri1, null, language,  userId, userName, auth, lastPollAux, session, true), 1000);
+				setTimeout(() => getPoll(uri1, null, language,  userId, userName, auth, lastPollAux, session, true), 3000);
 			}
 		}
 	}
