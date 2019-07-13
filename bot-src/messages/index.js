@@ -231,7 +231,7 @@ function getVADataMessage(session, message, next, botId) {
 
 				session.conversationData.auth = Buffer.from(fields["context"], 'base64').toString();
 				session.conversationData.va_message = capHtmlToList(session, msgdecodificada);
-				session.replaceDialog('fetchPoll');
+				//session.replaceDialog('fetchPoll');
 			}
 		});
 	}
@@ -466,26 +466,33 @@ function clearConversationData(session) {
 
 bot.dialog('fetchPoll', [
 	(session, args, next) => {
+		console.log('>>>>>>>>>>>>>>>> emulador disparou a primeira função <<<<<<<<<<<<<<<')
+		console.log('>>>>>>>>> context etapa 1: ' + session.conversationData.auth);			
 		//console.log('Original entrada: ' + session.message.text);
 		if (session.conversationData.started == undefined || session.conversationData.started == false) {
-			getVAContext(session, session.message.text, next, Util.botIds.uri1);
+			if (!session.conversationData.auth){
+				getVAContext(session, session.message.text, next, Util.botIds.uri1);
+			}
 		} else {
 			next();
 		}
 	},
 
 	(session, args, next) => {
-
+		console.log('>>>>>>>>>>>>>>>> emulador disparou a segunda função <<<<<<<<<<<<<<<')
+		console.log('>>>>>>>>> context etapa 2: ' + session.conversationData.auth);			
 		if (session.conversationData.isList) {
 			console.log('INPUT Choice>>>');
 			builder.Prompts.choice(session, session.conversationData.va_message.title, session.conversationData.va_message.options, { listStyle: builder.ListStyle.list, maxRetries: 0 });
 		} else {
 			console.log('INPUT Text>>>');
 			builder.Prompts.text(session, session.conversationData.va_message);
-
+			next();
 		}
 	},
 	function (session, results) {
+		console.log('>>>>>>>>>>>>>>>> emulador disparou a terceira função <<<<<<<<<<<<<<<')
+		console.log('>>>>>>>>> context etapa 3: ' + session.conversationData.auth);			
 
 		session.sendTyping();
 
@@ -504,6 +511,7 @@ bot.dialog('fetchPoll', [
 			console.log('request:');
 			console.log(requestData);
 			session.conversationData.lastPoll = new Date().getTime();*/
+			console.log('>>>>>>>>>> mensagem do emulador <<<<<<<<<<<');
 			getPoll(Util.botIds.uri1, userInput, language, userId, userName, session.conversationData.auth, session.conversationData.lastPoll, session);
 			
 			/*request.get(requestData, function (err, res, body) {
@@ -566,15 +574,15 @@ bot.dialog('fetchPoll', [
 
 ]);
 
-function getPoll(uri1, userInput, language,  userId, userName, auth, lastPoll, session) {
-	console.log('>>>>>> getPoll')
+function getPoll(uri1, userInput, language,  userId, userName, auth, lastPoll, session, internalPoll) {
 	console.log('>>>>>> DMLiveChatConnectionSucceed: ' + DMLiveChatConnectionSucceed);
+	console.log('>>>>>>>>> internalPoll: ' + internalPoll);
 	//var type = userInput ? (DMLiveChatConnectionSucceed ? 'Livechat' : 'Assistant') : 'Talk';
-	var type = DMLiveChatConnectionSucceed ? 'Livechat' : 'Assistant';
-	console.log('>>>>>> RequestType: ' + type);
+	var type = DMLiveChatConnectionSucceed ? (userInput ? null : 'Livechat') : 'Assistant';
+	console.log({RequestType: type});
 	var requestData = Util.prepareRequest(type, uri1, userInput, language,  userId, userName, auth, lastPoll);
 	session.conversationData.lastPoll = new Date().getTime();
-	console.log('>>>>>> requestData: ' + requestData);
+	console.log(type == 'Livechat' ? {requestData: requestData.json.parameters} : {requestData: requestData});
 
 	request.get(requestData, callbackPoll(requestData, uri1, userInput, language,  userId, userName, auth, lastPoll, session));
 }
@@ -582,9 +590,9 @@ function getPoll(uri1, userInput, language,  userId, userName, auth, lastPoll, s
 function callbackPoll (requestData, uri1, userInput, language,  userId, userName, auth, lastPoll, session) {
 	return function(err, res, body) {
 		let userInputAux = userInput;
+		let lastPollAux = lastPoll;
 		try {
-			const mensagem = typeof body == 'object' ? body : JSON.parse(body.replace(/(\s*?{\s*?|\s*?,\s*?)(['"])?([a-zA-Z0-9]+)(['"])?:/g, '$1"$3":'));
-			let lastPollAux = lastPoll;
+			const mensagem = typeof body == 'object' ? body : JSON.parse(body.replace(/(\s*?{\s*?|\s*?,\s*?)(['"])?([a-zA-Z0-9]+)(['"])?:/g, '$1"$3":'));			
 			mensagem = JSON.parse(JSON.stringify(mensagem));
 			
 			//if (body.values.text){
@@ -593,8 +601,8 @@ function callbackPoll (requestData, uri1, userInput, language,  userId, userName
 			//requestData.json.parameters.lastPoll = mensagem.values ? mensagem.values.serverTime : requestData.json.parameters.lastPoll;
 			requestData.json.parameters.timestamp = new Date().getTime() - 1000
 			
-			if (mensagem.values.serverTime) {
-				lastPollAux = mensagem.values.serverTime;
+			if (mensagem.serverTime || mensagem.values.serverTime) {
+				lastPollAux = mensagem.serverTime || mensagem.values.serverTime;
 			} else if (requestData.json) {
 				lastPollAux = requestData.json.parameters.lastPoll;
 			}
@@ -605,36 +613,46 @@ function callbackPoll (requestData, uri1, userInput, language,  userId, userName
 			}
 
 			console.log('>>>>>>> callbackPoll try')
-			console.log('>>>>>>> mensagem: ' + JSON.stringify(mensagem))
-			console.log('>>>>>>> lastPollAux: ' + lastPollAux)
+			console.log({mensagem: mensagem})
+			console.log({lastPollAux: lastPollAux})
 
 			try {
-				console.log('>>>>>>>> text: ' + mensagem.values.text);
-				session.conversationData.va_message = capHtmlToList(session, Buffer.from(mensagem.text, 'base64').toString());
+				const texto = Buffer.from(mensagem.text || mensagem.values.text, 'base64').toString();
+				console.log({text: texto});
+				session.conversationData.va_message = capHtmlToList(session, texto);
 				if (session.conversationData.va_message !== lastVAMessage){
 					session.send(session.conversationData.va_message);
-					lastVAMessage = session.conversationData.va_message
+					lastVAMessage = session.conversationData.va_message					
 				}
 			} catch (e) {
 				console.log(e);
 			}
 
-			setTimeout(() => getPoll(uri1, userInputAux, language,  userId, userName, auth, lastPollAux, session), 3000);
-     		lastVAMessage = session.conversationData.va_message;
-
+			if (DMLiveChatConnectionSucceed){
+				//mensagem do emulador, usar talk, senão usar chatHttp
+				setTimeout(() => getPoll(uri1, null, language,  userId, userName, auth, lastPollAux, session, true), 3000);
+			}
 		} catch (e) {			
-			console.log('>>>>>>> callbackPoll catch')
-			console.log('>>>>>>> body: ' + JSON.stringify(body))
+			console.log('>>>>>>> callbackPoll catch')			
 			body = JSON.parse(JSON.stringify(body));
+			console.log({body: body})
 
-			if (body.values && body.values.text) {
+			if (body.text || (body.values && body.values.text)) {
 				try {
-					console.log('>>>>>>>>> catch text: ' + body.values.text);
-					session.conversationData.va_message = capHtmlToList(session, Buffer.from(body.values.text, 'base64').toString());
+					if (body.serverTime || body.values.serverTime) {
+						lastPollAux = body.serverTime || body.values.serverTime;
+					} else if (requestData.json) {
+						lastPollAux = requestData.json.parameters.lastPoll;
+					}
+
+					const texto = Buffer.from(body.text || body.values.text, 'base64').toString();
+					console.log({catch_text: texto});
+					session.conversationData.va_message = capHtmlToList(session, texto);
 					
 					if (session.conversationData.va_message !== lastVAMessage){
 						session.send(session.conversationData.va_message);
 						lastVAMessage = session.conversationData.va_message
+						//session.replaceDialog('fetchPoll');
 					}
 				} catch (e) {
 					console.log(e);
@@ -648,7 +666,10 @@ function callbackPoll (requestData, uri1, userInput, language,  userId, userName
 					DMLiveChatConnectionSucceed = true;
 					//userInputAux = '';
 			}			
-			setTimeout(() => getPoll(uri1, userInputAux, language,  userId, userName, auth, lastPoll, session), 1000);
+
+			if (DMLiveChatConnectionSucceed){
+				setTimeout(() => getPoll(uri1, null, language,  userId, userName, auth, lastPollAux, session, true), 1000);
+			}
 		}
 	}
 }

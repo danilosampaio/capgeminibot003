@@ -23,16 +23,17 @@ module.exports.prepareRequest = (type, childbot, msg, language, userId, userName
 			user_id: matricula,
 			user_mail: email,
 			user_name: userName,
-			qualificationMode: qualificationMode
+			qualificationMode: qualificationMode,
+			context: contexto
 		}
 	};	 
 
 	if (type == "Assistant") {
-		requestData.qs.context = contexto;
+		//requestData.qs.context = contexto;
 		requestData.qs.mode = "Synchron";
 		requestData.qs.solutionUsed = "ASSISTANT";
 	} else if (type == "Livechatpost") {
-		requestData.qs.context = contexto;
+		//requestData.qs.context = contexto;
 		requestData.qs.mode = "Synchron";
 		requestData.qs.solutionUsed = "LIVECHAT";
 	} else if (type == "Livechat") {
