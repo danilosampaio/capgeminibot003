@@ -17,6 +17,7 @@ var newMessageFromLiveChat = false;
 var DMLiveChatConnectionSucceed = false;
 
 var lastVAMessage = "";
+var lastSentMessage = "";
 
 const listenerTimeout = 5000;
 
@@ -463,13 +464,12 @@ function clearConversationData(session) {
 	session.conversationData.started = false;
 }
 
-let fetchpollSteps = null;
+let forceFetchpoll = false;
 
 bot.dialog('fetchPoll', [
 	(session, args, next) => {
 		console.log('>>>>>>>>>>>>>>>> emulador disparou a primeira função <<<<<<<<<<<<<<<')
-		console.log('>>>>>>>>> context etapa 1: ' + session.conversationData.auth);		
-		fetchpollSteps = 'pendente';
+		console.log('>>>>>>>>> context etapa 1: ' + session.conversationData.auth);
 		
 		//console.log('Original entrada: ' + session.message.text);
 		if (!session.conversationData.started) {
@@ -484,11 +484,10 @@ bot.dialog('fetchPoll', [
 	(session, args, next) => {
 		console.log('>>>>>>>>>>>>>>>> emulador disparou a segunda função <<<<<<<<<<<<<<<')
 		console.log('>>>>>>>>> context etapa 2: ' + session.conversationData.auth);			
-		if (fetchpollSteps === 'pendente') {
+		if (forceFetchpoll) {
 			getPoll(Util.botIds.uri1, session.message.text, language, userId, userName, session.conversationData.auth, session.conversationData.lastPoll, session);
-			fetchpollSteps = 'concluido';	
+			forceFetchpoll = !forceFetchpoll;	
 		}
-		fetchpollSteps = 'pendente';
 
 		if (session.conversationData.isList) {
 			console.log('INPUT Choice>>>');
@@ -501,7 +500,6 @@ bot.dialog('fetchPoll', [
 	function (session, results) {
 		console.log('>>>>>>>>>>>>>>>> emulador disparou a terceira função <<<<<<<<<<<<<<<')
 		console.log('>>>>>>>>> context etapa 3: ' + session.conversationData.auth);	
-		fetchpollSteps = 'concluido';		
 
 		session.sendTyping();
 
@@ -634,7 +632,9 @@ function callbackPoll (requestData, uri1, userInput, language,  userId, userName
 					const texto = Buffer.from(mensagem.text || mensagem.values.text, 'base64').toString();
 					console.log({text: texto});
 					session.conversationData.va_message = capHtmlToList(session, texto);
-					if (session.conversationData.va_message !== lastVAMessage){
+					console.log({va_message: session.conversationData.va_message});
+					if (session.conversationData.va_message.length > 0 &&
+						session.conversationData.va_message != lastVAMessage){
 						session.send(session.conversationData.va_message);
 						lastVAMessage = session.conversationData.va_message					
 					}
@@ -665,7 +665,8 @@ function callbackPoll (requestData, uri1, userInput, language,  userId, userName
 					console.log({catch_text: texto});
 					session.conversationData.va_message = capHtmlToList(session, texto);
 					
-					if (session.conversationData.va_message !== lastVAMessage){
+					if (session.conversationData.va_message.length > 0 &&
+						session.conversationData.va_message != lastVAMessage){
 						session.send(session.conversationData.va_message);
 						lastVAMessage = session.conversationData.va_message
 						//session.replaceDialog('fetchPoll');
